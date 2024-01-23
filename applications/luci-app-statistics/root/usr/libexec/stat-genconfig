@@ -219,6 +219,41 @@ function config_iptables(c) {
 	return str;
 }
 
+function config_mqtt(c) {
+	let str = "";
+
+	for (let k, s in sections) {
+		for (let key, type in pairs({ Publish="collectd_mqtt_publish", Subscribe="collectd_mqtt_subscribe" })) {
+			if sections[s][".type"] == type {
+				let host = sections[s].host;
+				let port = sections[s].port;
+				let user = sections[s].user;
+				let password = sections[s].password;
+				let clientid = sections[s].clientid;
+				let qos = sections[s].qos;
+
+				str = str .. "\t<" .. key .. " \"" .. sections[s].name .. "\">\n" ..
+					"\t\tHost \"" .. host .. "\"\n" ..
+					(port and ("\t\tPort \"" .. port .. "\"\n") or "") ..
+					(user and ("\t\tUser \"" .. user .. "\"\n") or "") ..
+					(password and ("\t\tPassword \"" .. password .. "\"\n") or "") ..
+					(clientid and ("\t\tClientId \"" .. clientid .. "\"\n") or "") ..
+					(qos and ("\t\tQoS " .. qos .. "\n") or "")
+
+				if type == "collectd_mqtt_publish" then
+					str = str .. "\t" .. _string(sections[s].prefix, "Prefix") ..
+						"\t" .. _bool(sections[s].retain, "Retain")
+				end
+
+				str = str .. "\t</" .. key .. ">\n"
+			}
+		}
+	}
+
+	return str;
+
+}
+
 function config_network(c) {
 	let str = '';
 
@@ -269,6 +304,7 @@ for (let filename in lsdir(plugin_dir)) {
 	case 'exec':     plugins[name] = config_exec;     break;
 	case 'iptables': plugins[name] = config_iptables; break;
 	case 'curl':     plugins[name] = config_curl;     break;
+	case 'mqtt':     plugins[name] = config_mqtt;     break;
 	case 'network':  plugins[name] = config_network;  break;
 	default:
 		plugins[name] = json(open(`${plugin_dir}/${filename}`))?.legend;
